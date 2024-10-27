@@ -4,10 +4,7 @@ on:
   workflow_call:
 
 env:
-  CI_PROJECT_FE_NAME: ${{ secrets.CI_PROJECT_FE_NAME }}
-  ECR_REGISTRY_URL_FE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-  ECR_REGISTRY_FE: ${{ env.ECR_REGISTRY_URL_FE }}/${{ env.CI_PROJECT_FE_NAME }}
-  IMAGE_NAME_FE: ${{ env.ECR_REGISTRY_FE }}:${{ github.ref_name }}
+  IMAGE_NAME_FE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/{{ secrets.CI_PROJECT_FE_NAME }}:${{ github.ref_name }}
 
 jobs:
   build-and-push:
