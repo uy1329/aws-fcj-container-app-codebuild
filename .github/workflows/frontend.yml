@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 env:
-  IMAGE_NAME_FE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/{{ secrets.CI_PROJECT_FE_NAME }}:${{ github.ref_name }}
+  IMAGE_NAME_FE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.CI_PROJECT_FE_NAME }}:${{ github.ref_name }}
 
 jobs:
   # check_changes_frontend:
