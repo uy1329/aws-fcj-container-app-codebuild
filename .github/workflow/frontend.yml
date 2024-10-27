@@ -4,12 +4,9 @@ on:
   workflow_call:
 
 env:
-  ACCOUNT_NUMBER: ${{ secrets.AWS_ACCOUNT_NUMBER }}
-  REGION: ${{ secrets.AWS_REGION }}
-  CI_PROJECT_FE_NAME: fcjresbar-fe
+  CI_PROJECT_FE_NAME: ${{ secrets.CI_PROJECT_FE_NAME }}
   ECR_REGISTRY_URL_FE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-  ECR_REGISTRY_FE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.CI_PROJECT_FE_NAME }}
-  ECR_REGISTRY_TAG_FE: ${{ github.ref_name }}
+  ECR_REGISTRY_FE: ${{ env.ECR_REGISTRY_URL_FE }}/${{ env.CI_PROJECT_FE_NAME }}
   IMAGE_NAME_FE: ${{ env.ECR_REGISTRY_FE }}:${{ github.ref_name }}
 
 jobs:
@@ -25,7 +22,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -44,5 +41,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Deploy Frontend
+        env:
+          TASK_NAME_FE: ${{ secrets.TASK_NAME_FE }}
+          CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+          SERVICE_NAME_FE: ${{ secrets.SERVICE_NAME_FE }}
+          IMAGE_NAME_FE: ${{ env.IMAGE_NAME_FE }}
+          REGION: ${{ secrets.AWS_REGION }}
         run: bash frontend/deploy-frontend.sh
+ 

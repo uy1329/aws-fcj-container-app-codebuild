@@ -4,12 +4,9 @@ on:
   workflow_call:
 
 env:
-  ACCOUNT_NUMBER: ${{ secrets.AWS_ACCOUNT_NUMBER }}
-  REGION: ${{ secrets.AWS_REGION }}
-  CI_PROJECT_BE_NAME: fcjresbar-be
+  CI_PROJECT_BE_NAME: ${{ secrets.CI_PROJECT_BE_NAME }}
   ECR_REGISTRY_URL_BE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-  ECR_REGISTRY_BE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.CI_PROJECT_BE_NAME }}
-  ECR_REGISTRY_TAG_BE: ${{ github.ref_name }}
+  ECR_REGISTRY_BE: ${{ env.ECR_REGISTRY_URL_BE }}/${{ env.CI_PROJECT_BE_NAME }}
   IMAGE_NAME_BE: ${{ env.ECR_REGISTRY_BE }}:${{ github.ref_name }}
 
 jobs:
@@ -44,5 +41,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Deploy Backend
+        env:
+          TASK_NAME_BE: ${{ secrets.TASK_NAME_BE }}
+          IMAGE_NAME_BE: ${{ env.IMAGE_NAME_BE }}
+          AWS_APPLICATION_NAME: ${{ secrets.AWS_APPLICATION_NAME }}
+          AWS_DEPLOYMENT_GROUP_NAME: ${{ secrets.AWS_DEPLOYMENT_GROUP_NAME }}
+          REGION: ${{ secrets.AWS_REGION }}
         run: bash backend/deploy-backend.sh
