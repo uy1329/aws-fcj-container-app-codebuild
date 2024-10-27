@@ -7,7 +7,7 @@ env:
   IMAGE_NAME_BE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/{{ secrets.CI_PROJECT_BE_NAME }}:${{ github.ref_name }}
 
 jobs:
-  check_changes:
+  check_changes_backend:
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
@@ -21,8 +21,9 @@ jobs:
               - 'backend/**'
 
   build-and-push:
+    needs: check_changes_backend
     runs-on: ubuntu-latest
-    if: ${{ needs.check_changes.outputs.backend == 'true' }}
+    if: ${{ needs.check_changes_backend.outputs.backend == 'true' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
