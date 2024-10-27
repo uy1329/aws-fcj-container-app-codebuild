@@ -7,23 +7,23 @@ env:
   IMAGE_NAME_FE: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/{{ secrets.CI_PROJECT_FE_NAME }}:${{ github.ref_name }}
 
 jobs:
-  check_changes_frontend:
-    runs-on: ubuntu-latest
-    outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          filters: |
-            frontend:
-              - 'frontend/**'
+  # check_changes_frontend:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     frontend: ${{ steps.filter.outputs.frontend }}
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: dorny/paths-filter@v2
+  #       id: filter
+  #       with:
+  #         filters: |
+  #           frontend:
+  #             - 'frontend/**'
 
   build-and-push:
-    needs: check_changes_frontend
+    # needs: check_changes_frontend
     runs-on: ubuntu-latest
-    if: ${{ needs.check_changes_frontend.outputs.frontend == 'true' }}
+    # if: ${{ needs.check_changes_frontend.outputs.frontend == 'true' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
