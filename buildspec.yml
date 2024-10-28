@@ -1,10 +1,14 @@
 version: 0.2
 
+# Main buildspec file to route builds to appropriate projects
 phases:
   build:
     commands:
+      # Route to different build projects based on BUILD_TYPE environment variable
       - if [ "${BUILD_TYPE}" = "frontend" ]; then
+          # Trigger frontend build project if BUILD_TYPE is "frontend"
           cd frontend && aws codebuild start-build --project-name frontend-build
         elif [ "${BUILD_TYPE}" = "backend" ]; then
+          # Trigger backend build project if BUILD_TYPE is "backend"
           cd backend && aws codebuild start-build --project-name backend-build
         fi
