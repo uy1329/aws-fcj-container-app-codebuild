@@ -1,0 +1,10 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - if [ "${BUILD_TYPE}" = "frontend" ]; then
+          cd frontend && aws codebuild start-build --project-name frontend-build
+        elif [ "${BUILD_TYPE}" = "backend" ]; then
+          cd backend && aws codebuild start-build --project-name backend-build
+        fi

@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_NUMBER}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}
+      - IMAGE_URI=${AWS_ACCOUNT_NUMBER}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CI_PROJECT_BE_NAME}:${IMAGE_TAG}
+  
+  build:
+    commands:
+      - cd backend
+      - docker build -f Dockerfile -t ${IMAGE_URI} .
+      
+  post_build:
+    commands:
+      - docker push ${IMAGE_URI}
+      - TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_NAME_BE} --region ${AWS_REGION})
+      - NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "${IMAGE_URI}" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+      - aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION"
+      - cp appspec.yaml appspec.yml
+      - printf '{"ImageURI":"%s"}' $IMAGE_URI > imageDetail.json
+
+artifacts:
+  files:
+    - appspec.yml
+    - imageDetail.json
