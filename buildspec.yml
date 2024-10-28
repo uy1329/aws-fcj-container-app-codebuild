@@ -4,7 +4,7 @@ phases:
   build:
     commands:
       - if [ "${BUILD_TYPE}" = "frontend" ]; then
-          cd frontend && aws codebuild start-build --project-name frontend-build
+          cd frontend && aws codebuild start-build --project-name aws-fcj-container-fe
         elif [ "${BUILD_TYPE}" = "backend" ]; then
-          cd backend && aws codebuild start-build --project-name backend-build
+          cd backend && aws codebuild start-build --project-name aws-fcj-container-be
         fi
