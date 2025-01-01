@@ -3,39 +3,47 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      - echo Logging in to Amazon ECR...
       # Login to Amazon ECR
-      - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_NUMBER}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com
       # Set the image tag using CodeBuild source version
-      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}
+      - export IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
       # Set the full URI for the Docker image
-      - IMAGE_URI=${AWS_ACCOUNT_NUMBER}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CI_PROJECT_BE_NAME}:${IMAGE_TAG}
+      - export IMAGE_URI=$AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com/$CI_PROJECT_BE_NAME:$IMAGE_TAG
+      - echo "Image URI: $IMAGE_URI"
   
   build:
     commands:
       # Navigate to backend directory and build Docker image
+      - echo Building Docker image...
       - cd backend
-      - docker build -f Dockerfile -t ${IMAGE_URI} .
+      - docker build -f Dockerfile -t $IMAGE_URI .
       
   post_build:
     commands:
       # Push the Docker image to ECR
-      - docker push ${IMAGE_URI}
+      - echo Pushing Docker image to ECR...
+      - docker push $IMAGE_URI
       
       # Get the current task definition from ECS
-      - TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_NAME_BE} --region ${AWS_REGION})
+      - echo Retrieving ECS Task Definition...
+      - export TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_NAME_BE --region $AWS_REGION)
       
       # Create new task definition with updated image
-      - NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "${IMAGE_URI}" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
-      - NEW_REVISION=$(aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION")
+      - echo Creating new ECS Task Definition with updated image...
+      - export NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$IMAGE_URI" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+      - export NEW_REVISION=$(aws ecs register-task-definition --region $AWS_REGION --cli-input-json "$NEW_TASK_DEFINITION")
       
       # Extract required information for AppSpec
-      - AWS_TASK_DEFINITION_ARN=$(echo $TASK_DEFINITION | jq -r '.taskDefinition.taskDefinitionArn')
-      - CONTAINER_NAME=$(echo $TASK_DEFINITION | jq -r '.taskDefinition.containerDefinitions[0].name')
-      - CONTAINER_PORT=$(echo $TASK_DEFINITION | jq -r '.taskDefinition.containerDefinitions[0].portMappings[0].containerPort')
+      - echo Extracting required information for AppSpec...
+      - export AWS_TASK_DEFINITION_ARN=$(echo $TASK_DEFINITION | jq -r '.taskDefinition.taskDefinitionArn')
+      - export CONTAINER_NAME=$(echo $TASK_DEFINITION | jq -r '.taskDefinition.containerDefinitions[0].name')
+      - export CONTAINER_PORT=$(echo $TASK_DEFINITION | jq -r '.taskDefinition.containerDefinitions[0].portMappings[0].containerPort')
       
       # Create AppSpec content for CodeDeploy Blue/Green deployment
+      - echo Creating AppSpec content for CodeDeploy...
       - |
-        APP_SPEC=$(jq -n --arg taskDef "$AWS_TASK_DEFINITION_ARN" --arg containerName "$CONTAINER_NAME" --argjson containerPort "$CONTAINER_PORT" '{
+        export APP_SPEC=$(jq -n --arg taskDef "$AWS_TASK_DEFINITION_ARN" --arg containerName "$CONTAINER_NAME" --argjson containerPort "$CONTAINER_PORT" '{
           version: "0.0",
           Resources: [
             {
@@ -54,8 +62,9 @@ phases:
         }')
       
       # Create deployment revision with AppSpec content
+      - echo Creating deployment revision for CodeDeploy...
       - |
-        REVISION=$(jq -n --arg appSpec "$APP_SPEC" '{
+        export REVISION=$(jq -n --arg appSpec "$APP_SPEC" '{
           revisionType: "AppSpecContent",
           appSpecContent: {
             content: $appSpec
@@ -63,7 +72,8 @@ phases:
         }')
       
       # Create new deployment in CodeDeploy
-      - aws deploy create-deployment --region ${AWS_REGION} --application-name ${AWS_APPLICATION_NAME} --deployment-group-name ${AWS_DEPLOYMENT_GROUP_NAME} --revision "$REVISION"
+      - echo Creating new deployment in CodeDeploy...
+      - aws deploy create-deployment --region $AWS_REGION --application-name $AWS_APPLICATION_NAME --deployment-group-name $AWS_DEPLOYMENT_GROUP_NAME --revision "$REVISION"
 
 artifacts:
   files:
